@@ -1,118 +1,96 @@
-const express = require("express")
-const {adminAuth, userAuth} = require("../middleware/auth")
+const express = require("express");
+const {connectDB} = require("./config/database");
+const {User} = require("./models/user");
 const app = express();
 
-// app.use("/user", (req, res) => {
-//     res.send("Ha Ha ha")
-// })
+app.use(express.json())
 
-
-// // This will only handle Get call to /user
-// app.get("/user", (req,res) => {
-//     res.send({firstName : "Ravi", lastName : "Singh"})
-// })
-
-// // This will only handle Post call to /user
-// app.post("/user", (req,res) => {
-//     console.log("Save Data to the Database");
-//     res.send("Data Successfully saved to the database");
-    
-// })
-
-// // This will Delete the user
-// app.delete("/user", (req,res) => {
-//     res.send("Success")
-//     console.log("user Deleted Succesfully")
-// } )
-
-
-// // This will match all the HTTP method API calls to /test
-// app.use("/test", (req, res) => {
-//     res.send("This is test")
-// })
-
-
-// app.use('/user', (req,res, next) => {
-//     console.log("response 1");
-//     next();
-// },
-//     (req, res, next) => {
-//         next();
-//         console.log("response 2")
-//         // res.send("Hello World");
-//     },
-//     (req, res, next) => {
-//         console.log("response 3");
-//         next();
-//         // res.send("Blue")
-//     },
-//     (req, res, next) => {
-//         console.log("response 4");
-//         res.send("Response no. 5")
-//         // next();
+// app.post("/signup", async (req, res) => {
+//     const userObj = {
+//         firstName : "Prathavi",
+//         lastName : "Singh",
+//         emailId : "singhravi5590@gmail.com",
+//         password : "@123ravi",
+//         age : 23,
+//         gender : "male"
 //     }
+//     // Creating a new instance of the user model
+//     const user = new User(userObj)
 
-// )
-
-
-// app.use((req, res, next) => {
-//     // res.send("HI")
-//     next();
-// })
-
-// app.get("/user", (req, res) => {
-//     res.send("Response number 1");
-// })
-
-// app.get("/user", (req, res, next) => {
-//     res.send("Response number 2");
-//     next()
-// })
-
-// app.use("/admin", adminAuth);
+//     try{
+//         await user.save();
+//         res.send("User added successfully")
+//     }
+//     catch(error){
+//         res.status(404).send(error)
+//     }
+    
+// }) 
 
 
-// app.get("/admin/getUser", (req, res) => {
-    // const token = "xyz";
-    // const isAuthorized = (token === "xy");
-    // if(isAuthorized){
-    //     res.send("We are getting a user");
-    // }
-    // else{
-    //     res.status(404).send("User not found")
-    // }
 
-    // res.send("User Getting successfully")
-// })
+// User added with the help of postman
+app.post("/signup", async (req, res) => {
+    console.log(req.body)
 
-// app.post("/admin/postUser", (req, res) => {
-//     res.send("User added successfully");
-// })
-
-// app.delete("/admin/deleteUser", (req, res) => {
-//     res.send("User Deleted succesfully");
-// })
-
-// app.get("/user/getUser", userAuth, (req, res) => {
-//     res.send("user getting successfully")
-// })
-
-app.use("/", (err, req, res, next) => {
-    if(err){
-        res.status(404).send("Something went wrong");
-    }
-})
-
-app.get("/admin", (req, res) => {
+    const user = new User(req.body);
     try{
-        throw new Error("djgsduhdsfhdfsf");
+        await user.save();
+        res.send("User added successfully")
     }
     catch(err){
-        console.log(err);
-        res.send("Something went wrong");
+        res.send(err);
     }
 })
 
+// fetch user by emailid with the help of postman
+app.get("/user", async (req, res) => {
+    const userEmail = req.body.emailId
+    try{
+        const user = await User.find({emailId : userEmail})
 
+        if(user.length === 0){
+            res.status(404).send("User not found")
+        }
+        else{
+            res.send(user);
+        }
+    }
+    catch(err){
+        res.status(404).send("something went wrong")
+    }
+})
 
-app.listen(3000, () => console.log("Server is running on 3000"))
+// fetch a single user when same email in database
+app.get("/singleuser", async (req, res) => {
+    const userEmail = req.body.emailId
+    try{
+        const user = await User.findOne({emailId : userEmail})
+
+        if(user.length === 0){
+            res.status(404).send("User not found")
+        }
+        else{
+            res.send(user);
+        }
+    }
+    catch(err){
+        res.status(404).send("something went wrong")
+    }
+})
+
+// all user
+app.get("/userFeed",async (req, res) => {
+    const users = await User.find({});
+    res.send(users);
+})
+
+connectDB()
+.then(() => {
+    console.log("Database Connected Successfully");
+    app.listen(7777, () => console.log("Port connected successfully on 7777"))
+})
+.catch(() => {
+    console.log("Not connected")
+})
+
