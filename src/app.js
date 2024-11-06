@@ -31,15 +31,13 @@ app.use(express.json())
 
 // User added with the help of postman
 app.post("/signup", async (req, res) => {
-    console.log(req.body)
-
     const user = new User(req.body);
     try{
         await user.save();
         res.send("User added successfully")
     }
     catch(err){
-        res.send(err);
+        res.send(err.message);
     }
 })
 
@@ -83,6 +81,36 @@ app.get("/singleuser", async (req, res) => {
 app.get("/userFeed",async (req, res) => {
     const users = await User.find({});
     res.send(users);
+})
+
+
+// delete user by id
+app.delete("/deleteUser",async (req, res) =>{
+    const userId = req.body.userId;
+    try{
+        const user = await User.findOneAndDelete
+        // const user = await User.findByIdAndDelete(userId);
+        res.send("user deleted successfully")
+    }
+    catch(err){
+        res.status(404).send("something went wrong");
+    }
+})
+
+
+// Update Data of user
+app.patch("/user", async (req, res) => {
+    const userId = req.body.userId;
+    const data = req.body;
+    console.log(data)
+    console.log(userId)
+    try{
+        await User.findByIdAndUpdate({_id : userId}, data, {returnDocument : "after", runValidators : true})
+        res.send("user Updated successfully")
+    }
+    catch(err){
+        res.status(404).send("something went wrong" + err.message);
+    }
 })
 
 connectDB()
