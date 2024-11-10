@@ -1,6 +1,8 @@
 const express = require("express");
+const bcrypt = require("bcrypt");
 const {connectDB} = require("./config/database");
 const {User} = require("./models/user");
+const {validateSignUpData} = require('./utils/validation');
 const app = express();
 
 app.use(express.json())
@@ -31,8 +33,21 @@ app.use(express.json())
 
 // User added with the help of postman
 app.post("/signup", async (req, res) => {
-    const user = new User(req.body);
     try{
+        // validate signup data
+        validateSignUpData(req);
+
+        const {firstName, lastName, emailId, password} = req.body;
+        // Encrypt the password
+        let passwordHash = await bcrypt.hash(password, 10);
+
+        // Creating a new instance of the user model
+        const user = new User({
+            firstName,
+            lastName,
+            emailId,
+            password : passwordHash,
+        });
         await user.save();
         res.send("User added successfully")
     }
@@ -88,8 +103,8 @@ app.get("/userFeed",async (req, res) => {
 app.delete("/deleteUser",async (req, res) =>{
     const userId = req.body.userId;
     try{
-        const user = await User.findOneAndDelete
-        // const user = await User.findByIdAndDelete(userId);
+        // const user = await User.findOneAndDelete
+        const user = await User.findByIdAndDelete(userId);
         res.send("user deleted successfully")
     }
     catch(err){
@@ -118,6 +133,28 @@ app.patch("/user/:userId", async (req, res) => {
     catch(err){
         res.status(404).send("something went wrong " + err.message);
     }
+})
+
+// login by user
+
+app.post("/login", async (req, res) => {
+     try{
+        const {emailId, password} = req.body;
+        const user = await User.findOne({emailId : emailId});
+        if(!user){
+            throw new Error("User not found in data base")
+        }
+        const isTrue = await bcrypt.compare(password, user.password);
+        if(isTrue){
+            res.send("login successful");
+        }
+        else{
+            res.send("Password does not match")
+        }
+     }
+     catch(err){
+        res.status(400).send(err.message)
+     }
 })
 
 connectDB()

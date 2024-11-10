@@ -2,6 +2,7 @@ const express = require("express")
 const {adminAuth, userAuth} = require("../middleware/auth")
 const app = express();
 
+
 // app.use("/user", (req, res) => {
 //     res.send("Ha Ha ha")
 // })
@@ -97,21 +98,34 @@ const app = express();
 //     res.send("user getting successfully")
 // })
 
-app.use("/", (err, req, res, next) => {
-    if(err){
-        res.status(404).send("Something went wrong");
-    }
-})
+// app.use("/", (err, req, res, next) => {
+//     if(err){
+//         res.status(404).send("Something went wrong");
+//     }
+// })
 
-app.get("/admin", (req, res) => {
-    try{
-        throw new Error("djgsduhdsfhdfsf");
-    }
-    catch(err){
-        console.log(err);
-        res.send("Something went wrong");
-    }
-})
+// app.get("/admin", (req, res) => {
+//     try{
+//         throw new Error("djgsduhdsfhdfsf");
+//     }
+//     catch(err){
+//         console.log(err);
+//         res.send("Something went wrong");
+//     }
+// })
+
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+const myPlaintextPassword = 's0/\/\P4$$w0rD';
+const someOtherPlaintextPassword = 'not_bacon';
+
+bcrypt.genSalt(saltRounds, function(err, salt) {
+    // bcrypt.hash(myPlaintextPassword, salt, function(err, hash) {
+    //     console.log(salt);
+    // });
+
+    console.log(salt)
+});
 
 
 
