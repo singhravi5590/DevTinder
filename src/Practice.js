@@ -128,5 +128,84 @@ bcrypt.genSalt(saltRounds, function(err, salt) {
 });
 
 
+// this is methods of previous episodes
+
+// fetch user by emailid with the help of postman
+app.get("/user", async (req, res) => {
+    const userEmail = req.body.emailId
+    try{
+        const user = await User.find({emailId : userEmail})
+
+        if(user.length === 0){
+            res.status(404).send("User not found")
+        }
+        else{
+            res.send(user);
+        }
+    }
+    catch(err){
+        res.status(404).send("something went wrong")
+    }
+})
+
+// fetch a single user when same email in database
+app.get("/singleuser", async (req, res) => {
+    const userEmail = req.body.emailId
+    try{
+        const user = await User.findOne({emailId : userEmail})
+
+        if(user.length === 0){
+            res.status(404).send("User not found")
+        }
+        else{
+            res.send(user);
+        }
+    }
+    catch(err){
+        res.status(404).send("something went wrong")
+    }
+})
+
+
+// all user
+app.get("/userFeed",async (req, res) => {
+    const users = await User.find({});
+    res.send(users);
+})
+
+// Update Data of user
+app.patch("/user/:userId", async (req, res) => {
+    const userId = req.params?.userId;
+    const data = req.body;
+    try{
+        const allowedUpdates = ["firstName", "lastName", "age", "gender", "skills"];
+        const isAllowed = Object.keys(data).every((k) => allowedUpdates.includes(k));
+        if(!isAllowed){
+            throw new Error("Update cannot allowed")
+         }
+
+        if(data.skills.length > 2){
+            throw new Error("Skills cannot be more than 2")
+        }
+        await User.findByIdAndUpdate({_id : userId}, data, {returnDocument : "after", runValidators : true})
+        res.send("user Updated successfully")
+    }
+    catch(err){
+        res.status(404).send("something went wrong " + err.message);
+    }
+})
+
+// delete user by id
+app.delete("/deleteUser",async (req, res) =>{
+    const userId = req.body.userId;
+    try{
+        // const user = await User.findOneAndDelete
+        const user = await User.findByIdAndDelete(userId);
+        res.send("user deleted successfully")
+    }
+    catch(err){
+        res.status(404).send("something went wrong");
+    }
+})
 
 app.listen(3000, () => console.log("Server is running on 3000"))

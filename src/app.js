@@ -1,35 +1,15 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser")
 const {connectDB} = require("./config/database");
 const {User} = require("./models/user");
 const {validateSignUpData} = require('./utils/validation');
+const {userAuth} = require('../middleware/auth')
 const app = express();
 
 app.use(express.json())
-
-// app.post("/signup", async (req, res) => {
-//     const userObj = {
-//         firstName : "Prathavi",
-//         lastName : "Singh",
-//         emailId : "singhravi5590@gmail.com",
-//         password : "@123ravi",
-//         age : 23,
-//         gender : "male"
-//     }
-//     // Creating a new instance of the user model
-//     const user = new User(userObj)
-
-//     try{
-//         await user.save();
-//         res.send("User added successfully")
-//     }
-//     catch(error){
-//         res.status(404).send(error)
-//     }
-    
-// }) 
-
-
+app.use(cookieParser())
 
 // User added with the help of postman
 app.post("/signup", async (req, res) => {
@@ -56,105 +36,61 @@ app.post("/signup", async (req, res) => {
     }
 })
 
-// fetch user by emailid with the help of postman
-app.get("/user", async (req, res) => {
-    const userEmail = req.body.emailId
-    try{
-        const user = await User.find({emailId : userEmail})
-
-        if(user.length === 0){
-            res.status(404).send("User not found")
-        }
-        else{
-            res.send(user);
-        }
-    }
-    catch(err){
-        res.status(404).send("something went wrong")
-    }
-})
-
-// fetch a single user when same email in database
-app.get("/singleuser", async (req, res) => {
-    const userEmail = req.body.emailId
-    try{
-        const user = await User.findOne({emailId : userEmail})
-
-        if(user.length === 0){
-            res.status(404).send("User not found")
-        }
-        else{
-            res.send(user);
-        }
-    }
-    catch(err){
-        res.status(404).send("something went wrong")
-    }
-})
-
-// all user
-app.get("/userFeed",async (req, res) => {
-    const users = await User.find({});
-    res.send(users);
-})
-
-
-// delete user by id
-app.delete("/deleteUser",async (req, res) =>{
-    const userId = req.body.userId;
-    try{
-        // const user = await User.findOneAndDelete
-        const user = await User.findByIdAndDelete(userId);
-        res.send("user deleted successfully")
-    }
-    catch(err){
-        res.status(404).send("something went wrong");
-    }
-})
-
-
-// Update Data of user
-app.patch("/user/:userId", async (req, res) => {
-    const userId = req.params?.userId;
-    const data = req.body;
-    try{
-        const allowedUpdates = ["firstName", "lastName", "age", "gender", "skills"];
-        const isAllowed = Object.keys(data).every((k) => allowedUpdates.includes(k));
-        if(!isAllowed){
-            throw new Error("Update cannot allowed")
-         }
-
-        if(data.skills.length > 2){
-            throw new Error("Skills cannot be more than 2")
-        }
-        await User.findByIdAndUpdate({_id : userId}, data, {returnDocument : "after", runValidators : true})
-        res.send("user Updated successfully")
-    }
-    catch(err){
-        res.status(404).send("something went wrong " + err.message);
-    }
-})
-
 // login by user
-
 app.post("/login", async (req, res) => {
-     try{
-        const {emailId, password} = req.body;
-        const user = await User.findOne({emailId : emailId});
+    try{
+       const {emailId, password} = req.body;
+       const user = await User.findOne({emailId : emailId});
+       if(!user){
+           throw new Error("User not found in data base")
+       }
+       const isTrue = await bcrypt.compare(password, user.password);
+    //    this method is same as above it is with schema
+        // const isTrue = await user.Validate(password);
+       if(isTrue){
+
+           // creating a jwt token
+        //    const token = await jwt.sign({_id : user._id}, "@123Ravi", {expiresIn : "7d"}); //token expire in 7d
+           const token = await user.getJWT();
+            
+           // sending a cookie
+           res.cookie("token", token, {expires : new Date(Date.now() + 8 * 36000)}); //cookie expire in 8 hours
+
+           res.send("login successful");
+       }
+       else{
+           res.send("Password does not match")
+       }
+    }
+    catch(err){
+       res.status(400).send(err.message)
+    }
+})
+
+// getting a profile with cookies
+app.get("/profile", userAuth ,async (req, res) => {
+    try{
+        const user = req.user;
+        
         if(!user){
-            throw new Error("User not found in data base")
+            throw new Error("User Not found");
         }
-        const isTrue = await bcrypt.compare(password, user.password);
-        if(isTrue){
-            res.send("login successful");
-        }
-        else{
-            res.send("Password does not match")
-        }
-     }
-     catch(err){
+        res.send(user)
+    }
+    catch(err){
+        res.status(400).send(err.message);
+    }
+})
+
+// send connection
+app.post('/sendConnectionRequest', userAuth, (req, res) => {
+    try{
+        const user = req.user;
+        res.send('connecton sent by '+ user.firstName)
+    }
+    catch(err){
         res.status(400).send(err.message)
-     }
+    }
 })
 
 connectDB()
